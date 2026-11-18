@@ -307,6 +307,16 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0;
+      transition: grid-template-columns 0.25s ease;
+}
+    .compare-box:has(> .zone-box:first-child.add-mode),
+    .compare-box:has(> .zone-box:first-child.del-mode) {
+      grid-template-columns: 2.2fr 1fr;
+    }
+
+    .compare-box:has(> .zone-box:last-child.add-mode),
+    .compare-box:has(> .zone-box:last-child.del-mode) {
+      grid-template-columns: 1fr 2.2fr;
     }
     .zone-box {
       background: transparent;
@@ -483,21 +493,24 @@
       padding-top: 8px;
       border-top: 1px dashed var(--border-strong);
     }
+
     .add-bar-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 5px;
+      justify-content: flex-end; 
     }
     .edit-hint {
       font-size: 0.72rem;
       color: var(--text-sub);
     }
     .add-input {
-      flex: 1;
+      flex: 1 1 100%; 
       min-width: 0;
-      padding: 5px 8px;
+      padding: 7px 8px; 
       border: 1px solid var(--border-strong);
       border-radius: var(--radius);
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       background: var(--capsule-bg);
       color: var(--charcoal);
     }
@@ -1072,7 +1085,7 @@
 
       const addBarHtml = st.addOpen ? `
         <div class="add-bar">
-          <span class="edit-hint">${isEditing ? '✏️ 선택된 캡슐 내용을 수정합니다' : '💡 위 캡슐을 누르면 기존 내용을 바로 수정할 수 있어요'}</span>
+          <span class="edit-hint">${isEditing ? '선택된 캡슐 내용을 수정합니다' : '위 캡슐을 누르면 기존 내용을 수정할 수 있어요'}</span>
           <div class="add-bar-row">
             <input type="text" id="input_${zoneKey}" class="add-input"
               value="${escapeHtml(currentInputVal)}"
