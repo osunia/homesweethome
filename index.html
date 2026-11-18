@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>꼬말 & 깜고 이사 플래너</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* 시그니처 5색 팔레트 (#123226, #2F4A3A, #8B6F4E, #E9DEC8, #2B2B2B) */
+      --deep-green: #123226;
+      --forest-green: #2F4A3A;
+      --mocha-brown: #8B6F4E;
+      --oat-beige: #E9DEC8;
+      --charcoal: #2B2B2B;
+
+      /* 파생 톤 및 중복(붉은 라벨) 컬러 */
+      --card-bg: #F7F3EB;
+      --zone-bg: #EFE8D8;
+      --capsule-bg: #FCFBF8;
+      --border: #CFC3AC;
+      --border-strong: #B5A68C;
+      --text-sub: #665E52;
+      --danger: #8C3B32;
+      --danger-soft: #F3E4E1;
+      --dup-red: #A63A32;
+      --dup-bg: #FAE6E4;
+      --radius: 2px;
+    }
+
+    /* 모든 브라우저에서 스크롤바 숨김 (스크롤 기능은 유지) */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--oat-beige);
+      color: var(--charcoal);
+      line-height: 1.5;
+      padding-top: 118px;
+      padding-bottom: 48px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* 상단 헤더 */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 58px;
+      background: var(--deep-green);
+      border-bottom: 2px solid var(--mocha-brown);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(18, 50, 38, 0.15);
+    }
+    .brand {
+      font-family: 'Gowun Batang', serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--oat-beige);
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-tag {
+      font-family: "Pretendard", sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      background: var(--forest-green);
+      color: var(--oat-beige);
+      border: 1px solid var(--mocha-brown);
+      border-radius: var(--radius);
+      letter-spacing: 0.8px;
+    }
+    .sync-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: var(--radius);
+      background: var(--forest-green);
+      border: 1px solid rgba(233, 222, 200, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--oat-beige);
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #84B082; }
+    .dot.syncing { background: #E0A96D; animation: blink 1s infinite; }
+    .dot.error { background: #D96B59; }
+    @keyframes blink { 50% { opacity: 0.25; } }
+
+    /* 탭바: 모바일과 PC 모두 상단 위치 & 동일한 색상 유지 */
+    nav.tab-bar {
+      position: fixed;
+      top: 58px; left: 0; right: 0;
+      height: 48px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-strong);
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 14px;
+      z-index: 99;
+    }
+    .tab-btn {
+      flex: 1;
+      max-width: 220px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-sub);
+      font-weight: 600;
+      font-size: 0.86rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      letter-spacing: -0.2px;
+    }
+    .tab-btn:hover {
+      color: var(--deep-green);
+      background: var(--zone-bg);
+    }
+    .tab-btn.active {
+      background: var(--forest-green);
+      color: var(--oat-beige);
+      border-color: var(--deep-green);
+      box-shadow: inset 0 -2px 0 var(--mocha-brown);
+    }
+
+    /* 메인 영역 */
+    main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+
+    /* 상단 섹션 툴바 */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-strong);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar-title {
+      font-family: 'Gowun Batang', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--deep-green);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-title::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 18px;
+      background: var(--mocha-brown);
+    }
+
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn {
+      padding: 7px 13px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-strong);
+      background: var(--card-bg);
+      color: var(--charcoal);
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: var(--zone-bg); }
+    .btn.primary {
+      background: var(--forest-green);
+      color: var(--oat-beige);
+      border-color: var(--deep-green);
+    }
+    .btn.primary:hover { background: var(--deep-green); }
+    .btn.dup-active {
+      background: var(--dup-red);
+      color: #fff;
+      border-color: #7A251F;
+    }
+    .btn.manage-active {
+      background: var(--mocha-brown);
+      color: #fff;
+      border-color: var(--charcoal);
+    }
+    .btn.danger {
+      color: var(--danger);
+      border-color: #C99E99;
+      background: var(--danger-soft);
+    }
+
+    /* 모드 안내 배너 (중복 표시 모드 켜졌을 때) */
+    .mode-banner {
+      display: none;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      background: var(--dup-bg);
+      border: 1px solid #D9A5A0;
+      border-left: 4px solid var(--dup-red);
+      border-radius: var(--radius);
+      color: var(--dup-red);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    body.dup-mode .mode-banner { display: block; }
+
+    /* 반응형 그리드 (모바일 1열 -> PC 2열) */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    @media (min-width: 768px) {
+      .grid-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* 각진 에디토리얼 스타일 카드 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-strong);
+      border-top: 3px solid var(--deep-green);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 3px 0 rgba(43, 43, 43, 0.04);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      gap: 8px;
+    }
+    .space-title-input {
+      font-family: 'Gowun Batang', serif;
+      font-size: 1.06rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      padding: 4px 6px;
+      width: 100%;
+      color: var(--deep-green);
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .space-title-input:focus {
+      outline: none;
+      border-color: var(--mocha-brown);
+      background: var(--capsule-bg);
+    }
+
+    /* 공간 순서/삭제 관리 버튼 */
+    .manage-controls {
+      display: none;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    body.manage-mode .manage-controls { display: flex; }
+    .icon-btn {
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-strong);
+      background: var(--zone-bg);
+      color: var(--charcoal);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* 꼬말 / 깜고 2열 비교 레이아웃 */
+    .compare-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .zone-box {
+      background: var(--zone-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* 라벨 배지 */
+    .person-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: var(--radius);
+      letter-spacing: 0.5px;
+    }
+    .label-kkomal { background: var(--forest-green); color: var(--oat-beige); }
+    .label-kkamgo { background: var(--mocha-brown); color: #FCFBF8; }
+    .label-neutral { background: var(--deep-green); color: var(--oat-beige); }
+
+    /* 구역별 + / - 컨트롤 버튼 */
+    .zone-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .pm-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--border-strong);
+      background: var(--card-bg);
+      color: var(--charcoal);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.12s;
+    }
+    .pm-btn:hover {
+      border-color: var(--deep-green);
+      background: var(--capsule-bg);
+    }
+    .pm-btn.active-add {
+      background: var(--forest-green);
+      color: var(--oat-beige);
+      border-color: var(--deep-green);
+    }
+    .pm-btn.active-del {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    /* 캡슐(칩) 리스트 */
+    .capsule-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      min-height: 36px;
+      align-content: flex-start;
+    }
+    .empty-hint {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      padding: 4px 2px;
+      font-style: italic;
+    }
+    .capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: var(--capsule-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--forest-green);
+      border-radius: var(--radius);
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: var(--charcoal);
+      user-select: none;
+      transition: all 0.12s;
+      word-break: break-word;
+      box-shadow: 0 1px 2px rgba(43, 43, 43, 0.04);
+    }
+    .zone-kkamgo .capsule { border-left-color: var(--mocha-brown); }
+    .zone-neutral .capsule { border-left-color: var(--deep-green); }
+
+    /* 중복 표시된 캡슐 스타일 (눈에 띄는 붉은 라벨) */
+    .capsule.is-dup {
+      background: var(--dup-bg);
+      border-color: #D4958F;
+      border-left: 3px solid var(--dup-red);
+      color: #7A221B;
+      font-weight: 600;
+    }
+    .capsule.is-dup::after {
+      content: "중복";
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      margin-left: 2px;
+      background: var(--dup-red);
+      color: #fff;
+      border-radius: var(--radius);
+    }
+    body.dup-mode #tab-compare .capsule {
+      cursor: pointer;
+    }
+    body.dup-mode #tab-compare .capsule:hover {
+      border-color: var(--dup-red);
+      transform: translateY(-1px);
+    }
+
+    /* + 버튼(추가/수정 모드) 켜졌을 때 캡슐 클릭으로 수정 가능 표시 */
+    .add-mode .capsule {
+      cursor: pointer;
+    }
+    .add-mode .capsule:hover {
+      border-color: var(--forest-green);
+      background: #fff;
+    }
+    .add-mode .capsule.editing {
+      background: #E4ECE7;
+      border: 1px solid var(--forest-green);
+      border-left: 3px solid var(--deep-green);
+      color: var(--deep-green);
+      font-weight: 700;
+    }
+
+    /* 삭제 선택 모드일 때 캡슐 스타일 */
+    .del-mode .capsule {
+      cursor: pointer;
+      border: 1px dashed var(--mocha-brown);
+      border-left: 3px solid var(--mocha-brown);
+    }
+    .del-mode .capsule::before {
+      content: "☐";
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+    .del-mode .capsule.selected {
+      background: var(--danger-soft);
+      border: 1px solid var(--danger);
+      border-left: 3px solid var(--danger);
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .del-mode .capsule.selected::before {
+      content: "☑";
+      color: var(--danger);
+    }
+
+    /* + 버튼 눌렀을 때 열리는 입력/수정 바 */
+    .add-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-strong);
+    }
+    .add-bar-row {
+      display: flex;
+      gap: 6px;
+    }
+    .edit-hint {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+    }
+    .add-input {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 9px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 0.84rem;
+      background: var(--capsule-bg);
+      color: var(--charcoal);
+    }
+    .add-input:focus {
+      outline: none;
+      border-color: var(--deep-green);
+      background: #fff;
+    }
+
+    /* - 버튼 눌렀을 때 열리는 다중삭제 확인 바 */
+    .del-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      padding: 6px 9px;
+      background: var(--danger-soft);
+      border: 1px solid #C99E99;
+      border-radius: var(--radius);
+      font-size: 0.78rem;
+      color: var(--danger);
+      font-weight: 500;
+    }
+
+    /* 3. 세련된 커스텀 모달 스타일 (못생긴 브라우저 기본 팝업 대체) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 50, 38, 0.45);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-strong);
+      border-top: 4px solid var(--deep-green);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 12px 28px rgba(18, 50, 38, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      animation: modalFadeIn 0.15s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-title {
+      font-family: 'Gowun Batang', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--deep-green);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .modal-message {
+      font-size: 0.88rem;
+      color: var(--charcoal);
+      line-height: 1.55;
+      word-break: keep-all;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 상단 헤더 -->
+  <header>
+    <div class="brand">
+      <span>꼬말 & 깜고 이사 플래너</span>
+      <span class="brand-tag">2027.01.25</span>
+    </div>
+    <div class="sync-badge">
+      <span class="dot" id="syncDot"></span>
+      <span id="syncText">준비됨</span>
+    </div>
+  </header>
+
+  <!-- 탭바 (모바일 & PC 모두 상단 고정 + 동일 컬러) -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('principles', this)">이삿짐 원칙</button>
+    <button class="tab-btn" onclick="switchTab('compare', this)">공간별 짐 비교</button>
+    <button class="tab-btn" onclick="switchTab('buy', this)">새로 구입할 짐</button>
+  </nav>
+
+  <main>
+    <!-- 탭 1: 이삿짐 꾸리기 원칙 -->
+    <section id="tab-principles" class="tab-section active">
+      <div class="toolbar">
+        <div class="toolbar-title">이삿짐 꾸리기 원칙</div>
+      </div>
+      <div class="grid-container" id="principlesGrid"></div>
+    </section>
+
+    <!-- 탭 2: 공간별 짐 비교 (꼬말 / 깜고) -->
+    <section id="tab-compare" class="tab-section">
+      <div class="toolbar">
+        <div class="toolbar-title">공간별 짐 비교</div>
+        <div class="btn-group">
+          <!-- 1. 공간 추가 버튼도 나머지 버튼과 동일한 색상(.btn)으로 통일 -->
+          <button class="btn" onclick="addSpace()">+ 공간 추가</button>
+          <button class="btn" id="dupBtn" onclick="toggleDupMode()">중복 표시</button>
+          <button class="btn" id="manageBtn" onclick="toggleManageMode()">관리</button>
+        </div>
+      </div>
+      <div class="mode-banner">
+        꼬말/깜고의 품목을 누르면 붉은 중복 라벨이 표시되거나 해제됩니다.
+      </div>
+      <div class="grid-container" id="compareGrid"></div>
+    </section>
+
+    <!-- 탭 3: 공간별 새로 구입할 가구/짐 -->
+    <section id="tab-buy" class="tab-section">
+      <div class="toolbar">
+        <div class="toolbar-title">새로 구입해야 할 가구·짐</div>
+      </div>
+      <div class="grid-container" id="buyGrid"></div>
+    </section>
+  </main>
+
+  <!-- 3. 커스텀 확인/알림 모달 -->
+  <div class="modal-overlay" id="customModal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-box">
+      <div class="modal-title" id="modalTitle">확인</div>
+      <div class="modal-message" id="modalMessage"></div>
+      <div class="modal-actions">
+        <button class="btn" id="modalCancelBtn" onclick="closeModal()">취소</button>
+        <button class="btn danger" id="modalConfirmBtn" onclick="handleModalConfirm()">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // ★ 구글 앱스 스크립트(GAS) 배포 URL을 아래 큰따옴표 안에 넣어주세요!
+    // =========================================================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxKj05_crWX1-XVSK1HZIuwyKrZEeAXJiNSOQbDf6ufTS4olgImHcDt0u95VNV6zU0x/exec";
+
+    const STORAGE_KEY = 'MOVING_PLANNER_CAPSULE_V3';
+    let syncTimer = null;
+    let isManageMode = false;
+    let isDupMode = false;
+    let modalConfirmCallback = null;
+    const uiState = {};
+
+    const defaultData = {
+      principles: [
+        {
+          id: 'p1',
+          title: '1. 기본 이사 조건 (2027.01.25)',
+          items: [
+            { text: '반포장 이사 (잔짐 박스 포장) + 잔류물품 폐기', dup: false },
+            { text: '출발지: 4층 빌라 (사다리차 필수)', dup: false },
+            { text: '도착지: 아파트 11층 (엘리베이터 예약·보양 확인)', dup: false },
+            { text: '적재물배상책임보험 가입 여부 확인', dup: false },
+            { text: '당일 추가금 없음 조건 견적서 명시', dup: false }
+          ]
+        },
+        {
+          id: 'p2',
+          title: '2. 짐 정리 핵심 원칙 (21평 투룸)',
+          items: [
+            { text: '실평수 15평에 맞춰 꼭 쓸 것만 챙기기', dup: false },
+            { text: '나머지는 출발지에서 미리 처분', dup: false },
+            { text: '큰 가구는 배치 공간 확정한 품목만 반입', dup: false },
+            { text: '반입 리스트 사전 작성·공유 (동선 파악용)', dup: false },
+            { text: '덕질용품은 미리 자차 이동', dup: false }
+          ]
+        },
+        {
+          id: 'p3',
+          title: '3. 출발지 잔류 및 폐기 품목',
+          items: [
+            { text: '슈퍼싱글 침대 (프레임 + 매트리스)', dup: false },
+            { text: '소형 냉장고 1대', dup: false },
+            { text: '미포장 잔짐·생활폐기물 일괄 수거 확인', dup: false },
+            { text: '수거 불가 시 대형폐기물 스티커·별도 업체 이용', dup: false }
+          ]
+        }
+      ],
+      spaces: [
+        {
+          id: 's1',
+          name: '주방',
+          kkomal: [
+            { text: '직수 정수기 1대 (철거·설치 확인)', dup: false },
+            { text: '밥솥', dup: false },
+            { text: '소형 에어프라이어', dup: false },
+            { text: '토스터기', dup: false },
+            { text: '전자레인지', dup: false },
+            { text: '유리잔 및 머그컵 다수', dup: true },
+            { text: '들통형 냄비', dup: true },
+            { text: '편수냄비', dup: true },
+            { text: '프라이팬', dup: true },
+            { text: '반찬그릇들', dup: false }
+          ],
+          kkamgo: [
+            { text: '유리잔/머그컵 중복 조율', dup: true },
+            { text: '냄비류·프라이팬 선별', dup: true },
+            { text: '수저 세트', dup: false },
+            { text: '밥그릇/국그릇 세트', dup: false },
+            { text: '칼/도마', dup: false }
+          ],
+          toBuy: [
+            { text: '중복 정리 후 부족한 조리도구', dup: false }
+          ]
+        },
+        {
+          id: 's2',
+          name: '공용 거실',
+          kkomal: [
+            { text: '벽걸이 에어컨 (철거·이전설치 문의)', dup: false },
+            { text: '운동용 실내 바이크 1대', dup: false }
+          ],
+          kkamgo: [
+            { text: '거실 책장 수용 분량만큼의 책 선별', dup: false }
+          ],
+          toBuy: [
+            { text: '거실 공용 책장', dup: false }
+          ]
+        },
+        {
+          id: 's3',
+          name: '개인 방',
+          kkomal: [
+            { text: '싱글 간이침대 1개 (매트리스 포함)', dup: false },
+            { text: '설치형 행거 세트 (해체·재설치 상담)', dup: false },
+            { text: '책상 1개 + 의자 1개', dup: false },
+            { text: '3단 조립식 책장 1개', dup: false },
+            { text: '침대 협탁 1개', dup: false },
+            { text: '의류·생활용품 이사박스 소량', dup: false }
+          ],
+          kkamgo: [
+            { text: '방 크기·붙박이장에 맞는 가구', dup: false },
+            { text: '선별한 의류 및 개인 물품', dup: false }
+          ],
+          toBuy: [
+            { text: '방 실측 후 수납용품', dup: false }
+          ]
+        },
+        {
+          id: 's4',
+          name: '욕실 및 세탁실',
+          kkomal: [
+            { text: '통돌이 세탁기 1대 (이전 설치 문의)', dup: false },
+            { text: '당장 쓸 최소한의 수건·세제', dup: false }
+          ],
+          kkamgo: [
+            { text: '당장 쓸 수건·욕실용품 최소한', dup: false },
+            { text: '기존 자잘한 소모품은 처분하고 오기', dup: false }
+          ],
+          toBuy: [
+            { text: '욕실 슬리퍼 및 청소도구', dup: false }
+          ]
+        }
+      ]
+    };
+
+    function toItemObjects(arr) {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(item => {
+        if (typeof item === 'string') return { text: item, dup: false };
+        if (item && typeof item === 'object') return { text: String(item.text || ''), dup: Boolean(item.dup) };
+        return null;
+      }).filter(x => x && x.text);
+    }
+
+    function normalizeData(data) {
+      if (!data || !Array.isArray(data.principles) || !Array.isArray(data.spaces)) {
+        return JSON.parse(JSON.stringify(defaultData));
+      }
+      data.principles.forEach(p => {
+        if (!Array.isArray(p.items)) {
+          const lines = p.content ? p.content.split('\n').map(s => s.replace(/^[•\-]\s*/, '').trim()).filter(Boolean) : [];
+          p.items = toItemObjects(lines);
+          delete p.content;
+        } else {
+          p.items = toItemObjects(p.items);
+        }
+      });
+      data.spaces.forEach(s => {
+        ['kkomal', 'kkamgo', 'toBuy'].forEach(k => {
+          if (!Array.isArray(s[k])) {
+            const lines = typeof s[k] === 'string'
+              ? s[k].split('\n').map(line => line.replace(/^[•\-]\s*/, '').trim()).filter(Boolean)
+              : [];
+            s[k] = toItemObjects(lines);
+          } else {
+            s[k] = toItemObjects(s[k]);
+          }
+        });
+      });
+      return data;
+    }
+
+    let appData = loadLocalData();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+      fetchFromSheet();
+    });
+
+    function loadLocalData() {
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MOVING_PLANNER_CAPSULE_V2');
+      if (raw) {
+        try { return normalizeData(JSON.parse(raw)); } catch (e) { console.error(e); }
+      }
+      return JSON.parse(JSON.stringify(defaultData));
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      setSyncStatus('syncing', '저장 중...');
+
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        pushToSheet();
+      }, 800);
+    }
+
+    function setSyncStatus(state, text) {
+      const dot = document.getElementById('syncDot');
+      const label = document.getElementById('syncText');
+      dot.className = 'dot ' + (state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '');
+      label.textContent = text;
+    }
+
+    function isValidGasUrl() {
+      return GAS_URL && GAS_URL.startsWith('https://script.google.com/') && !GAS_URL.includes('여기에_배포');
+    }
+
+    async function fetchFromSheet() {
+      if (!isValidGasUrl()) {
+        setSyncStatus('ok', '로컬 저장됨');
+        return;
+      }
+      setSyncStatus('syncing', '불러오는 중...');
+      try {
+        const res = await fetch(GAS_URL);
+        const text = await res.text();
+        if (text && text.trim().startsWith('{')) {
+          appData = normalizeData(JSON.parse(text));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          renderAll();
+          setSyncStatus('ok', '동기화 완료');
+        } else {
+          await pushToSheet();
+        }
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('error', '로컬 모드');
+      }
+    }
+
+    async function pushToSheet() {
+      if (!isValidGasUrl()) {
+        setSyncStatus('ok', '로컬 저장됨');
+        return;
+      }
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(appData)
+        });
+        setSyncStatus('ok', '동기화 완료');
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('error', '로컬 저장됨');
+      }
+    }
+
+    function getZoneState(zoneKey) {
+      if (!uiState[zoneKey]) {
+        uiState[zoneKey] = {
+          addOpen: false,
+          editIdx: null,
+          delMode: false,
+          selected: new Set()
+        };
+      }
+      return uiState[zoneKey];
+    }
+
+    // 4. 모든 활성화된 기능(추가/수정, 선택 삭제, 중복 표시, 공간 관리) 일괄 초기화 함수
+    function resetAllModes() {
+      isManageMode = false;
+      isDupMode = false;
+      document.body.classList.remove('manage-mode', 'dup-mode');
+
+      const dupBtn = document.getElementById('dupBtn');
+      if (dupBtn) {
+        dupBtn.classList.remove('dup-active');
+        dupBtn.textContent = '중복 표시';
+      }
+
+      const manageBtn = document.getElementById('manageBtn');
+      if (manageBtn) {
+        manageBtn.classList.remove('manage-active');
+        manageBtn.textContent = '관리';
+      }
+
+      Object.keys(uiState).forEach(k => {
+        uiState[k].addOpen = false;
+        uiState[k].editIdx = null;
+        uiState[k].delMode = false;
+        uiState[k].selected.clear();
+      });
+    }
+
+    // 3. 커스텀 모달 열기 / 닫기 / 확인 실행
+    function openConfirmModal(title, message, confirmText, onConfirm) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalMessage').textContent = message;
+      document.getElementById('modalConfirmBtn').textContent = confirmText || '확인';
+      modalConfirmCallback = onConfirm;
+      document.getElementById('customModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('customModal').classList.remove('open');
+      modalConfirmCallback = null;
+    }
+
+    function handleModalConfirm() {
+      const cb = modalConfirmCallback;
+      closeModal();
+      if (typeof cb === 'function') cb();
+    }
+
+    function buildZoneHtml(zoneKey, labelText, labelClass, items, zoneThemeClass = 'zone-neutral', showHeader = true) {
+      const st = getZoneState(zoneKey);
+      const isEditing = st.addOpen && st.editIdx !== null && items[st.editIdx];
+      const currentInputVal = isEditing ? items[st.editIdx].text : '';
+
+      const capsulesHtml = items.length === 0
+        ? `<span class="empty-hint">+ 버튼으로 항목을 추가하세요</span>`
+        : items.map((item, idx) => {
+            const isSel = st.selected.has(idx) ? 'selected' : '';
+            const isDup = item.dup ? 'is-dup' : '';
+            const isEditTarget = (st.addOpen && st.editIdx === idx) ? 'editing' : '';
+            return `<span class="capsule ${isDup} ${isSel} ${isEditTarget}" onclick="handleCapsuleClick('${zoneKey}', ${idx})">${escapeHtml(item.text)}</span>`;
+          }).join('');
+
+      const addBarHtml = st.addOpen ? `
+        <div class="add-bar">
+          <span class="edit-hint">${isEditing ? '✏️ 선택된 캡슐 내용을 수정합니다' : '💡 위 캡슐을 누르면 기존 내용을 바로 수정할 수 있어요'}</span>
+          <div class="add-bar-row">
+            <input type="text" id="input_${zoneKey}" class="add-input"
+              value="${escapeHtml(currentInputVal)}"
+              placeholder="${isEditing ? '수정할 내용 입력 후 Enter' : '항목 입력 후 Enter'}"
+              onkeydown="if(event.key==='Enter'){ event.preventDefault(); submitCapsuleItem('${zoneKey}'); }">
+            <button class="btn primary" onclick="submitCapsuleItem('${zoneKey}')">${isEditing ? '수정' : '추가'}</button>
+            ${isEditing ? `<button class="btn" onclick="cancelEditCapsule('${zoneKey}')">취소</button>` : ''}
+          </div>
+        </div>
+      ` : '';
+
+      const delBarHtml = st.delMode ? `
+        <div class="del-bar">
+          <span>삭제할 캡슐 선택</span>
+          <div class="btn-group">
+            <button class="btn danger" onclick="confirmDeleteSelected('${zoneKey}')">삭제 (${st.selected.size})</button>
+            <button class="btn" onclick="toggleDelMode('${zoneKey}')">취소</button>
+          </div>
+        </div>
+      ` : '';
+
+      const headerHtml = showHeader ? `
+        <div class="zone-header">
+          <span class="person-label ${labelClass}">${escapeHtml(labelText)}</span>
+          <div class="zone-actions">
+            <button class="pm-btn ${st.addOpen ? 'active-add' : ''}" title="항목 추가/수정" onclick="toggleAddBar('${zoneKey}')">+</button>
+            <button class="pm-btn ${st.delMode ? 'active-del' : ''}" title="항목 선택 삭제" onclick="toggleDelMode('${zoneKey}')">−</button>
+          </div>
+        </div>
+      ` : '';
+
+      const modeClasses = `${zoneThemeClass} ${st.addOpen ? 'add-mode' : ''} ${st.delMode ? 'del-mode' : ''}`;
+
+      return `
+        <div class="zone-box ${modeClasses}">
+          ${headerHtml}
+          <div class="capsule-list">
+            ${capsulesHtml}
+          </div>
+          ${addBarHtml}
+          ${delBarHtml}
+        </div>
+      `;
+    }
+
+    function getTargetArray(zoneKey) {
+      const parts = zoneKey.split('_');
+      if (parts[0] === 'p') {
+        const pIdx = Number(parts[1]);
+        return appData.principles[pIdx].items;
+      } else if (parts[0] === 's') {
+        const sIdx = Number(parts[1]);
+        const field = parts[2];
+        return appData.spaces[sIdx][field];
+      }
+      return [];
+    }
+
+    function handleCapsuleClick(zoneKey, itemIdx) {
+      const st = getZoneState(zoneKey);
+      const arr = getTargetArray(zoneKey);
+      if (!arr[itemIdx]) return;
+
+      if (st.delMode) {
+        if (st.selected.has(itemIdx)) {
+          st.selected.delete(itemIdx);
+        } else {
+          st.selected.add(itemIdx);
+        }
+        renderAll();
+        return;
+      }
+
+      if (st.addOpen) {
+        st.editIdx = (st.editIdx === itemIdx) ? null : itemIdx;
+        renderAll();
+        setTimeout(() => {
+          const inp = document.getElementById('input_' + zoneKey);
+          if (inp) {
+            inp.focus();
+            inp.setSelectionRange(inp.value.length, inp.value.length);
+          }
+        }, 20);
+        return;
+      }
+
+      if (isDupMode && zoneKey.startsWith('s_')) {
+        arr[itemIdx].dup = !arr[itemIdx].dup;
+        saveData();
+        renderAll();
+      }
+    }
+
+    function cancelEditCapsule(zoneKey) {
+      const st = getZoneState(zoneKey);
+      st.editIdx = null;
+      renderAll();
+      setTimeout(() => {
+        const inp = document.getElementById('input_' + zoneKey);
+        if (inp) inp.focus();
+      }, 20);
+    }
+
+    // 4. + 버튼 클릭 시 다른 모든 켜진 기능 자동 해제 후 현재 구역만 토글
+    function toggleAddBar(zoneKey) {
+      const wasOpen = getZoneState(zoneKey).addOpen;
+      resetAllModes();
+      if (!wasOpen) {
+        const st = getZoneState(zoneKey);
+        st.addOpen = true;
+      }
+      renderAll();
+      if (!wasOpen) {
+        setTimeout(() => {
+          const inp = document.getElementById('input_' + zoneKey);
+          if (inp) inp.focus();
+        }, 20);
+      }
+    }
+
+    // 4. - 버튼 클릭 시 다른 모든 켜진 기능 자동 해제 후 현재 구역만 토글
+    function toggleDelMode(zoneKey) {
+      const wasDel = getZoneState(zoneKey).delMode;
+      resetAllModes();
+      if (!wasDel) {
+        const st = getZoneState(zoneKey);
+        st.delMode = true;
+      }
+      renderAll();
+    }
+
+    function submitCapsuleItem(zoneKey) {
+      const inp = document.getElementById('input_' + zoneKey);
+      if (!inp) return;
+      const val = inp.value.trim();
+      if (!val) return;
+
+      const st = getZoneState(zoneKey);
+      const arr = getTargetArray(zoneKey);
+
+      if (st.editIdx !== null && arr[st.editIdx]) {
+        arr[st.editIdx].text = val;
+        st.editIdx = null;
+      } else {
+        arr.push({ text: val, dup: false });
+      }
+
+      saveData();
+      renderAll();
+
+      setTimeout(() => {
+        const nextInp = document.getElementById('input_' + zoneKey);
+        if (nextInp) nextInp.focus();
+      }, 20);
+    }
+
+    function confirmDeleteSelected(zoneKey) {
+      const st = getZoneState(zoneKey);
+      if (st.selected.size === 0) return;
+
+      const arr = getTargetArray(zoneKey);
+      const sortedIndices = Array.from(st.selected).sort((a, b) => b - a);
+      sortedIndices.forEach(idx => arr.splice(idx, 1));
+
+      st.selected.clear();
+      st.delMode = false;
+      saveData();
+      renderAll();
+    }
+
+    function renderAll() {
+      renderPrinciples();
+      renderCompareAndBuy();
+    }
+
+    function renderPrinciples() {
+      const container = document.getElementById('principlesGrid');
+      container.innerHTML = '';
+
+      appData.principles.forEach((item, idx) => {
+        const zoneKey = `p_${idx}`;
+        const st = getZoneState(zoneKey);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <input type="text" class="space-title-input" value="${escapeHtml(item.title)}"
+              oninput="updatePrincipleTitle(${idx}, this.value)">
+            <div class="zone-actions">
+              <button class="pm-btn ${st.addOpen ? 'active-add' : ''}" title="항목 추가/수정" onclick="toggleAddBar('${zoneKey}')">+</button>
+              <button class="pm-btn ${st.delMode ? 'active-del' : ''}" title="항목 선택 삭제" onclick="toggleDelMode('${zoneKey}')">−</button>
+            </div>
+          </div>
+          ${buildZoneHtml(zoneKey, '', '', item.items, 'zone-neutral', false)}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderCompareAndBuy() {
+      const compareGrid = document.getElementById('compareGrid');
+      const buyGrid = document.getElementById('buyGrid');
+      compareGrid.innerHTML = '';
+      buyGrid.innerHTML = '';
+
+      appData.spaces.forEach((space, idx) => {
+        // 공간별 짐 비교 카드
+        const compareCard = document.createElement('div');
+        compareCard.className = 'card';
+        compareCard.innerHTML = `
+          <div class="card-header">
+            <input type="text" class="space-title-input" value="${escapeHtml(space.name)}"
+              placeholder="공간 이름"
+              oninput="updateSpaceName(${idx}, this.value)">
+            <div class="manage-controls">
+              <button class="icon-btn" onclick="moveSpace(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+              <button class="icon-btn" onclick="moveSpace(${idx}, 1)" ${idx === appData.spaces.length - 1 ? 'disabled' : ''}>▼</button>
+              <button class="icon-btn btn danger" onclick="deleteSpace(${idx})">삭제</button>
+            </div>
+          </div>
+          <div class="compare-box">
+            ${buildZoneHtml(`s_${idx}_kkomal`, '꼬말', 'label-kkomal', space.kkomal, 'zone-kkomal', true)}
+            ${buildZoneHtml(`s_${idx}_kkamgo`, '깜고', 'label-kkamgo', space.kkamgo, 'zone-kkamgo', true)}
+          </div>
+        `;
+        compareGrid.appendChild(compareCard);
+
+        // 2. 새로 구입할 짐 카드: '구입 예정 품목' 배지를 없애고 카드 헤더 우측에 바로 + / - 배치
+        const buyZoneKey = `s_${idx}_toBuy`;
+        const buySt = getZoneState(buyZoneKey);
+        const buyCard = document.createElement('div');
+        buyCard.className = 'card';
+        buyCard.innerHTML = `
+          <div class="card-header">
+            <strong class="buy-space-title" data-idx="${idx}" style="font-family:'Gowun Batang',serif; font-size:1.05rem; color:var(--deep-green); padding:4px 6px;">${escapeHtml(space.name)}</strong>
+            <div class="zone-actions">
+              <button class="pm-btn ${buySt.addOpen ? 'active-add' : ''}" title="항목 추가/수정" onclick="toggleAddBar('${buyZoneKey}')">+</button>
+              <button class="pm-btn ${buySt.delMode ? 'active-del' : ''}" title="항목 선택 삭제" onclick="toggleDelMode('${buyZoneKey}')">−</button>
+            </div>
+          </div>
+          ${buildZoneHtml(buyZoneKey, '', '', space.toBuy, 'zone-neutral', false)}
+        `;
+        buyGrid.appendChild(buyCard);
+      });
+    }
+
+    function updatePrincipleTitle(idx, val) {
+      appData.principles[idx].title = val;
+      saveData();
+    }
+
+    function updateSpaceName(idx, val) {
+      appData.spaces[idx].name = val;
+      const buyTitle = document.querySelector(`.buy-space-title[data-idx="${idx}"]`);
+      if (buyTitle) buyTitle.textContent = val;
+      saveData();
+    }
+
+    // 4. 공간 추가 시에도 기존 켜져 있던 모드 자동 해제
+    function addSpace() {
+      resetAllModes();
+      appData.spaces.push({
+        id: 's_' + Date.now(),
+        name: '새로운 공간',
+        kkomal: [],
+        kkamgo: [],
+        toBuy: []
+      });
+      renderAll();
+      saveData();
+    }
+
+    // 4. 중복 표시 모드 토글 (다른 모든 기능 해제 후 실행)
+    function toggleDupMode() {
+      const willBeActive = !isDupMode;
+      resetAllModes();
+      if (willBeActive) {
+        isDupMode = true;
+        document.body.classList.add('dup-mode');
+        const btn = document.getElementById('dupBtn');
+        btn.classList.add('dup-active');
+        btn.textContent = '중복 표시 완료';
+      }
+      renderAll();
+    }
+
+    // 4. 관리 모드 토글 (다른 모든 기능 해제 후 실행)
+    function toggleManageMode() {
+      const willBeActive = !isManageMode;
+      resetAllModes();
+      if (willBeActive) {
+        isManageMode = true;
+        document.body.classList.add('manage-mode');
+        const btn = document.getElementById('manageBtn');
+        btn.classList.add('manage-active');
+        btn.textContent = '관리 완료';
+      }
+      renderAll();
+    }
+
+    function moveSpace(idx, direction) {
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= appData.spaces.length) return;
+      const temp = appData.spaces[idx];
+      appData.spaces[idx] = appData.spaces[targetIdx];
+      appData.spaces[targetIdx] = temp;
+      renderCompareAndBuy();
+      saveData();
+    }
+
+    // 3. 공간 삭제 시 브라우저 기본 confirm 대신 커스텀 모달 호출
+    function deleteSpace(idx) {
+      const spaceName = appData.spaces[idx].name;
+      openConfirmModal(
+        '공간 삭제',
+        `'${spaceName}' 공간을 삭제할까요? 새로 구입할 짐 탭의 해당 공간 카드도 함께 삭제됩니다.`,
+        '삭제',
+        () => {
+          appData.spaces.splice(idx, 1);
+          renderCompareAndBuy();
+          saveData();
+        }
+      );
+    }
+
+    // 4. 탭 이동 시 켜져 있던 모든 기능 버튼 자동 해제
+    function switchTab(tabId, btnEl) {
+      resetAllModes();
+      renderAll();
+      document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      btnEl.classList.add('active');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
