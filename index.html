@@ -8,14 +8,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* 시그니처 5색 팔레트 (#123226, #2F4A3A, #8B6F4E, #E9DEC8, #2B2B2B) */
       --deep-green: #123226;
       --forest-green: #2F4A3A;
       --mocha-brown: #8B6F4E;
       --oat-beige: #E9DEC8;
       --charcoal: #2B2B2B;
-
-      /* 파생 톤 및 중복(붉은 라벨) 컬러 */
       --card-bg: #F7F3EB;
       --zone-bg: #EFE8D8;
       --capsule-bg: #FCFBF8;
@@ -29,7 +26,6 @@
       --radius: 2px;
     }
 
-    /* 모든 브라우저에서 스크롤바 숨김 (스크롤 기능은 유지) */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -54,7 +50,6 @@
       overflow-x: hidden;
     }
 
-    /* 상단 헤더 */
     header {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -105,7 +100,6 @@
     .dot.error { background: #D96B59; }
     @keyframes blink { 50% { opacity: 0.25; } }
 
-    /* 탭바: 모바일과 PC 모두 상단 위치 & 동일한 색상 유지 */
     nav.tab-bar {
       position: fixed;
       top: 58px; left: 0; right: 0;
@@ -142,12 +136,10 @@
       box-shadow: inset 0 -2px 0 var(--mocha-brown);
     }
 
-    /* 메인 영역 */
     main { max-width: 1200px; margin: 0 auto; padding: 16px; }
     .tab-section { display: none; }
     .tab-section.active { display: block; }
 
-    /* 상단 섹션 툴바 */
     .toolbar {
       display: flex;
       justify-content: space-between;
@@ -213,7 +205,6 @@
       background: var(--danger-soft);
     }
 
-    /* 모드 안내 배너 (중복 표시 모드 켜졌을 때) */
     .mode-banner {
       display: none;
       margin-bottom: 14px;
@@ -228,7 +219,6 @@
     }
     body.dup-mode .mode-banner { display: block; }
 
-    /* 반응형 그리드 (모바일 1열 -> PC 2열) */
     .grid-container {
       display: grid;
       grid-template-columns: 1fr;
@@ -240,7 +230,6 @@
       }
     }
 
-    /* 각진 에디토리얼 스타일 카드 */
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border-strong);
@@ -278,7 +267,6 @@
       background: var(--capsule-bg);
     }
 
-    /* 공간 순서/삭제 관리 버튼 */
     .manage-controls {
       display: none;
       gap: 4px;
@@ -297,7 +285,6 @@
     }
     .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    /* 꼬말 / 깜고 2열 비교 레이아웃 */
     .compare-box {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -320,7 +307,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* 라벨 배지 */
     .person-label {
       font-size: 0.78rem;
       font-weight: 700;
@@ -332,7 +318,6 @@
     .label-kkamgo { background: var(--mocha-brown); color: #FCFBF8; }
     .label-neutral { background: var(--deep-green); color: var(--oat-beige); }
 
-    /* 구역별 + / - 컨트롤 버튼 */
     .zone-actions {
       display: flex;
       gap: 4px;
@@ -369,7 +354,6 @@
       border-color: var(--danger);
     }
 
-    /* 캡슐(칩) 리스트 */
     .capsule-list {
       display: flex;
       flex-wrap: wrap;
@@ -403,7 +387,6 @@
     .zone-kkamgo .capsule { border-left-color: var(--mocha-brown); }
     .zone-neutral .capsule { border-left-color: var(--deep-green); }
 
-    /* 중복 표시된 캡슐 스타일 (눈에 띄는 붉은 라벨) */
     .capsule.is-dup {
       background: var(--dup-bg);
       border-color: #D4958F;
@@ -429,7 +412,6 @@
       transform: translateY(-1px);
     }
 
-    /* + 버튼(추가/수정 모드) 켜졌을 때 캡슐 클릭으로 수정 가능 표시 */
     .add-mode .capsule {
       cursor: pointer;
     }
@@ -445,7 +427,6 @@
       font-weight: 700;
     }
 
-    /* 삭제 선택 모드일 때 캡슐 스타일 */
     .del-mode .capsule {
       cursor: pointer;
       border: 1px dashed var(--mocha-brown);
@@ -468,7 +449,6 @@
       color: var(--danger);
     }
 
-    /* + 버튼 눌렀을 때 열리는 입력/수정 바 */
     .add-bar {
       display: flex;
       flex-direction: column;
@@ -501,7 +481,6 @@
       background: #fff;
     }
 
-    /* - 버튼 눌렀을 때 열리는 다중삭제 확인 바 */
     .del-bar {
       display: flex;
       justify-content: space-between;
@@ -517,7 +496,6 @@
       font-weight: 500;
     }
 
-    /* 3. 세련된 커스텀 모달 스타일 (못생긴 브라우저 기본 팝업 대체) */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -573,8 +551,6 @@
   </style>
 </head>
 <body>
-
-  <!-- 상단 헤더 -->
   <header>
     <div class="brand">
       <span>꼬말 & 깜고 이사 플래너</span>
@@ -585,8 +561,7 @@
       <span id="syncText">준비됨</span>
     </div>
   </header>
-
-  <!-- 탭바 (모바일 & PC 모두 상단 고정 + 동일 컬러) -->
+  
   <nav class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('principles', this)">이삿짐 원칙</button>
     <button class="tab-btn" onclick="switchTab('compare', this)">공간별 짐 비교</button>
@@ -594,7 +569,6 @@
   </nav>
 
   <main>
-    <!-- 탭 1: 이삿짐 꾸리기 원칙 -->
     <section id="tab-principles" class="tab-section active">
       <div class="toolbar">
         <div class="toolbar-title">이삿짐 꾸리기 원칙</div>
@@ -602,12 +576,10 @@
       <div class="grid-container" id="principlesGrid"></div>
     </section>
 
-    <!-- 탭 2: 공간별 짐 비교 (꼬말 / 깜고) -->
     <section id="tab-compare" class="tab-section">
       <div class="toolbar">
         <div class="toolbar-title">공간별 짐 비교</div>
         <div class="btn-group">
-          <!-- 1. 공간 추가 버튼도 나머지 버튼과 동일한 색상(.btn)으로 통일 -->
           <button class="btn" onclick="addSpace()">+ 공간 추가</button>
           <button class="btn" id="dupBtn" onclick="toggleDupMode()">중복 표시</button>
           <button class="btn" id="manageBtn" onclick="toggleManageMode()">관리</button>
@@ -619,7 +591,6 @@
       <div class="grid-container" id="compareGrid"></div>
     </section>
 
-    <!-- 탭 3: 공간별 새로 구입할 가구/짐 -->
     <section id="tab-buy" class="tab-section">
       <div class="toolbar">
         <div class="toolbar-title">새로 구입해야 할 가구·짐</div>
@@ -628,7 +599,6 @@
     </section>
   </main>
 
-  <!-- 3. 커스텀 확인/알림 모달 -->
   <div class="modal-overlay" id="customModal" onclick="if(event.target===this) closeModal()">
     <div class="modal-box">
       <div class="modal-title" id="modalTitle">확인</div>
@@ -641,9 +611,6 @@
   </div>
 
   <script>
-    // =========================================================================
-    // ★ 구글 앱스 스크립트(GAS) 배포 URL을 아래 큰따옴표 안에 넣어주세요!
-    // =========================================================================
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxKj05_crWX1-XVSK1HZIuwyKrZEeAXJiNSOQbDf6ufTS4olgImHcDt0u95VNV6zU0x/exec";
 
     const STORAGE_KEY = 'MOVING_PLANNER_CAPSULE_V3';
@@ -657,7 +624,7 @@
       principles: [
         {
           id: 'p1',
-          title: '1. 기본 이사 조건 (2027.01.25)',
+          title: '1. 기본 이사 조건',
           items: [
             { text: '반포장 이사 (잔짐 박스 포장) + 잔류물품 폐기', dup: false },
             { text: '출발지: 4층 빌라 (사다리차 필수)', dup: false },
@@ -892,7 +859,6 @@
       return uiState[zoneKey];
     }
 
-    // 4. 모든 활성화된 기능(추가/수정, 선택 삭제, 중복 표시, 공간 관리) 일괄 초기화 함수
     function resetAllModes() {
       isManageMode = false;
       isDupMode = false;
@@ -918,7 +884,6 @@
       });
     }
 
-    // 3. 커스텀 모달 열기 / 닫기 / 확인 실행
     function openConfirmModal(title, message, confirmText, onConfirm) {
       document.getElementById('modalTitle').textContent = title;
       document.getElementById('modalMessage').textContent = message;
@@ -1058,7 +1023,6 @@
       }, 20);
     }
 
-    // 4. + 버튼 클릭 시 다른 모든 켜진 기능 자동 해제 후 현재 구역만 토글
     function toggleAddBar(zoneKey) {
       const wasOpen = getZoneState(zoneKey).addOpen;
       resetAllModes();
@@ -1075,7 +1039,6 @@
       }
     }
 
-    // 4. - 버튼 클릭 시 다른 모든 켜진 기능 자동 해제 후 현재 구역만 토글
     function toggleDelMode(zoneKey) {
       const wasDel = getZoneState(zoneKey).delMode;
       resetAllModes();
@@ -1161,7 +1124,6 @@
       buyGrid.innerHTML = '';
 
       appData.spaces.forEach((space, idx) => {
-        // 공간별 짐 비교 카드
         const compareCard = document.createElement('div');
         compareCard.className = 'card';
         compareCard.innerHTML = `
@@ -1182,7 +1144,6 @@
         `;
         compareGrid.appendChild(compareCard);
 
-        // 2. 새로 구입할 짐 카드: '구입 예정 품목' 배지를 없애고 카드 헤더 우측에 바로 + / - 배치
         const buyZoneKey = `s_${idx}_toBuy`;
         const buySt = getZoneState(buyZoneKey);
         const buyCard = document.createElement('div');
@@ -1213,7 +1174,6 @@
       saveData();
     }
 
-    // 4. 공간 추가 시에도 기존 켜져 있던 모드 자동 해제
     function addSpace() {
       resetAllModes();
       appData.spaces.push({
@@ -1227,7 +1187,6 @@
       saveData();
     }
 
-    // 4. 중복 표시 모드 토글 (다른 모든 기능 해제 후 실행)
     function toggleDupMode() {
       const willBeActive = !isDupMode;
       resetAllModes();
@@ -1241,7 +1200,6 @@
       renderAll();
     }
 
-    // 4. 관리 모드 토글 (다른 모든 기능 해제 후 실행)
     function toggleManageMode() {
       const willBeActive = !isManageMode;
       resetAllModes();
@@ -1265,12 +1223,11 @@
       saveData();
     }
 
-    // 3. 공간 삭제 시 브라우저 기본 confirm 대신 커스텀 모달 호출
     function deleteSpace(idx) {
       const spaceName = appData.spaces[idx].name;
       openConfirmModal(
         '공간 삭제',
-        `'${spaceName}' 공간을 삭제할까요? 새로 구입할 짐 탭의 해당 공간 카드도 함께 삭제됩니다.`,
+        `'${spaceName}' 공간을 삭제할까요? 탭의 카드도 함께 삭제됩니다.`,
         '삭제',
         () => {
           appData.spaces.splice(idx, 1);
@@ -1280,7 +1237,6 @@
       );
     }
 
-    // 4. 탭 이동 시 켜져 있던 모든 기능 버튼 자동 해제
     function switchTab(tabId, btnEl) {
       resetAllModes();
       renderAll();
