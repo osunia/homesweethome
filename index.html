@@ -44,7 +44,7 @@
       background-color: var(--oat-beige);
       color: var(--charcoal);
       line-height: 1.5;
-      padding-top: 118px;
+      padding-top: 114px;
       padding-bottom: 48px;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
@@ -154,7 +154,7 @@
       box-shadow: inset 0 -2px 0 var(--mocha-brown);
     }
 
-    main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 12px; }
     .tab-section { display: none; }
     .tab-section.active { display: block; }
 
@@ -162,7 +162,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       padding-bottom: 10px;
       border-bottom: 1px solid var(--border-strong);
       gap: 8px;
@@ -187,7 +187,7 @@
 
     .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
     .btn {
-      padding: 7px 13px;
+      padding: 6px 12px;
       border-radius: var(--radius);
       border: 1px solid var(--border-strong);
       background: var(--card-bg);
@@ -225,7 +225,7 @@
 
     .mode-banner {
       display: none;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       padding: 8px 12px;
       background: var(--dup-bg);
       border: 1px solid #D9A5A0;
@@ -240,7 +240,7 @@
     .grid-container {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 18px;
+      gap: 14px;
     }
     @media (min-width: 768px) {
       .grid-container {
@@ -253,10 +253,10 @@
       border: 1px solid var(--border-strong);
       border-top: 3px solid var(--deep-green);
       border-radius: var(--radius);
-      padding: 16px;
+      padding: 13px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       box-shadow: 0 3px 0 rgba(43, 43, 43, 0.04);
     }
     .card-header {
@@ -264,16 +264,16 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
+      padding-bottom: 8px;
       gap: 8px;
     }
     .space-title-input {
       font-family: 'Gowun Batang', serif;
-      font-size: 1.06rem;
+      font-size: 1.05rem;
       font-weight: 700;
       border: 1px solid transparent;
       border-radius: var(--radius);
-      padding: 4px 6px;
+      padding: 2px 4px;
       width: 100%;
       color: var(--deep-green);
       background: transparent;
@@ -292,8 +292,8 @@
     }
     body.manage-mode .manage-controls { display: flex; }
     .icon-btn {
-      padding: 4px 9px;
-      font-size: 0.78rem;
+      padding: 4px 8px;
+      font-size: 0.76rem;
       border-radius: var(--radius);
       border: 1px solid var(--border-strong);
       background: var(--zone-bg);
@@ -306,29 +306,37 @@
     .compare-box {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 0;
     }
     .zone-box {
-      background: var(--zone-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
+      background: transparent;
+      border: none;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      min-width: 0;
     }
+    .compare-box > .zone-box:first-child {
+      padding-right: 10px;
+    }
+    .compare-box > .zone-box:last-child {
+      padding-left: 10px;
+      border-left: 1px solid var(--border);
+    }
+
     .zone-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+      border-bottom: 1px dashed var(--border);
     }
 
     .person-label {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 700;
-      padding: 4px 12px;
+      padding: 3px 10px;
       border-radius: var(--radius);
       letter-spacing: 0.5px;
     }
@@ -342,13 +350,13 @@
       flex-shrink: 0;
     }
     .pm-btn {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       border: 1px solid var(--border-strong);
-      background: var(--card-bg);
+      background: var(--capsule-bg);
       color: var(--charcoal);
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       border-radius: var(--radius);
       cursor: pointer;
       display: inline-flex;
@@ -359,7 +367,7 @@
     }
     .pm-btn:hover {
       border-color: var(--deep-green);
-      background: var(--capsule-bg);
+      background: #fff;
     }
     .pm-btn.active-add {
       background: var(--forest-green);
@@ -375,32 +383,32 @@
     .capsule-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
-      min-height: 36px;
+      gap: 6px;
+      min-height: 30px;
       align-content: flex-start;
     }
     .empty-hint {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--text-sub);
-      padding: 4px 2px;
+      padding: 2px 0;
       font-style: italic;
     }
     .capsule {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 5px 10px;
+      gap: 4px;
+      padding: 4px 8px;
       background: var(--capsule-bg);
       border: 1px solid var(--border);
       border-left: 3px solid var(--forest-green);
       border-radius: var(--radius);
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       font-weight: 500;
       color: var(--charcoal);
       user-select: none;
       transition: all 0.12s;
       word-break: break-word;
-      box-shadow: 0 1px 2px rgba(43, 43, 43, 0.04);
+      box-shadow: 0 1px 2px rgba(43, 43, 43, 0.03);
     }
     .zone-kkamgo .capsule { border-left-color: var(--mocha-brown); }
     .zone-neutral .capsule { border-left-color: var(--deep-green); }
@@ -414,9 +422,9 @@
     }
     .capsule.is-dup::after {
       content: "중복";
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       font-weight: 700;
-      padding: 1px 5px;
+      padding: 1px 4px;
       margin-left: 2px;
       background: var(--dup-red);
       color: #fff;
@@ -452,7 +460,7 @@
     }
     .del-mode .capsule::before {
       content: "☐";
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-sub);
     }
     .del-mode .capsule.selected {
@@ -470,26 +478,26 @@
     .add-bar {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
+      gap: 5px;
+      margin-top: 2px;
       padding-top: 8px;
       border-top: 1px dashed var(--border-strong);
     }
     .add-bar-row {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
     .edit-hint {
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       color: var(--text-sub);
     }
     .add-input {
       flex: 1;
       min-width: 0;
-      padding: 6px 9px;
+      padding: 5px 8px;
       border: 1px solid var(--border-strong);
       border-radius: var(--radius);
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       background: var(--capsule-bg);
       color: var(--charcoal);
     }
@@ -504,12 +512,12 @@
       justify-content: space-between;
       align-items: center;
       gap: 6px;
-      margin-top: 4px;
-      padding: 6px 9px;
+      margin-top: 2px;
+      padding: 5px 8px;
       background: var(--danger-soft);
       border: 1px solid #C99E99;
       border-radius: var(--radius);
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--danger);
       font-weight: 500;
     }
@@ -743,7 +751,6 @@
       (localArr || []).forEach(item => {
         if (!item || !item.uid || deletedSet.has(item.uid)) return;
         if (!map.has(item.uid)) {
-
           const existingSameText = Array.from(map.values()).find(x => x.text === item.text);
           if (existingSameText) {
             if ((item.updatedAt || 0) > (existingSameText.updatedAt || 0)) {
@@ -796,9 +803,7 @@
         }
       });
 
-      const sMap = new Map();
       const sOrder = [];
-
       const localOrderTime = local._orderUpdatedAt || 0;
       const remoteOrderTime = remote._orderUpdatedAt || 0;
       const primarySpaces = localOrderTime >= remoteOrderTime ? local.spaces : remote.spaces;
@@ -857,7 +862,6 @@
     function startAutoPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(() => {
-
         if (isUserTyping() || hasPendingLocalChanges || isSyncing) return;
         fetchFromSheet(false);
       }, POLL_INTERVAL_MS);
@@ -868,7 +872,6 @@
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
         return true;
       }
-
       return Object.values(uiState).some(st => st.addOpen || st.delMode);
     }
 
@@ -955,7 +958,6 @@
       }
     }
 
-    // 💡 저장하기 직전에 서버 데이터를 먼저 불러와 합친 뒤(Merge) 저장하여 덮어쓰기 사고 방지!
     async function syncWithServer(forceRender = false) {
       if (!isValidGasUrl()) {
         setSyncStatus('ok', '로컬 저장됨');
@@ -1084,9 +1086,9 @@
 
       const delBarHtml = st.delMode ? `
         <div class="del-bar">
-          <span>삭제할 캡슐 선택</span>
+          <span>삭제 선택</span>
           <div class="btn-group">
-            <button class="btn danger" onclick="confirmDeleteSelected('${zoneKey}')">삭제 (${st.selected.size})</button>
+            <button class="btn danger" onclick="confirmDeleteSelected('${zoneKey}')">삭제(${st.selected.size})</button>
             <button class="btn" onclick="toggleDelMode('${zoneKey}')">취소</button>
           </div>
         </div>
@@ -1313,7 +1315,7 @@
         buyCard.className = 'card';
         buyCard.innerHTML = `
           <div class="card-header">
-            <strong class="buy-space-title" data-idx="${idx}" style="font-family:'Gowun Batang',serif; font-size:1.05rem; color:var(--deep-green); padding:4px 6px;">${escapeHtml(space.name)}</strong>
+            <strong class="buy-space-title" data-idx="${idx}" style="font-family:'Gowun Batang',serif; font-size:1.05rem; color:var(--deep-green); padding:2px 4px;">${escapeHtml(space.name)}</strong>
             <div class="zone-actions">
               <button class="pm-btn ${buySt.addOpen ? 'active-add' : ''}" title="항목 추가/수정" onclick="toggleAddBar('${buyZoneKey}')">+</button>
               <button class="pm-btn ${buySt.delMode ? 'active-del' : ''}" title="항목 선택 삭제" onclick="toggleDelMode('${buyZoneKey}')">−</button>
