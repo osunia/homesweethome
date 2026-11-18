@@ -84,6 +84,11 @@
       border-radius: var(--radius);
       letter-spacing: 0.8px;
     }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .sync-badge {
       font-size: 0.75rem;
       padding: 4px 10px;
@@ -94,6 +99,19 @@
       align-items: center;
       gap: 6px;
       color: var(--oat-beige);
+    }
+    .refresh-btn {
+      background: var(--forest-green);
+      color: var(--oat-beige);
+      border: 1px solid rgba(233, 222, 200, 0.25);
+      border-radius: var(--radius);
+      padding: 3px 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .refresh-btn:hover {
+      background: var(--mocha-brown);
     }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #84B082; }
     .dot.syncing { background: #E0A96D; animation: blink 1s infinite; }
@@ -556,9 +574,12 @@
       <span>둥지 프로젝트</span>
       <span class="brand-tag">2027.01.25</span>
     </div>
-    <div class="sync-badge">
-      <span class="dot" id="syncDot"></span>
-      <span id="syncText">준비됨</span>
+    <div class="header-right">
+      <div class="sync-badge">
+        <span class="dot" id="syncDot"></span>
+        <span id="syncText">준비됨</span>
+      </div>
+      <button class="refresh-btn" title="지금 즉시 동기화" onclick="manualSync()">↻</button>
     </div>
   </header>
   
@@ -613,45 +634,70 @@
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxKj05_crWX1-XVSK1HZIuwyKrZEeAXJiNSOQbDf6ufTS4olgImHcDt0u95VNV6zU0x/exec";
 
-    const STORAGE_KEY = 'MOVING_PLANNER_CAPSULE_V3';
+    const STORAGE_KEY = 'MOVING_PLANNER_CAPSULE_V4';
+    const POLL_INTERVAL_MS = 5000; // 5초마다 상대방 변경사항 자동 확인
+
     let syncTimer = null;
+    let pollTimer = null;
+    let isSyncing = false;
+    let hasPendingLocalChanges = false;
     let isManageMode = false;
     let isDupMode = false;
     let modalConfirmCallback = null;
     const uiState = {};
 
+    // 고유 ID 생성기 (각 캡슐마다 주민등록번호 같은 고유 이름표를 붙여줍니다)
+    function makeUid(prefix = 'id') {
+      return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+    }
+
+    // 텍스트 기반 고정 해시 ID (초기 기본 데이터가 양쪽 컴퓨터에서 동일한 ID를 갖도록 보장)
+    function makeDeterministicId(seedStr) {
+      let hash = 0;
+      for (let i = 0; i < seedStr.length; i++) {
+        hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+        hash |= 0;
+      }
+      return 'init_' + Math.abs(hash).toString(36);
+    }
+
     const defaultData = {
+      _rev: 0,
+      deletedIds: [],
       principles: [
         {
           id: 'p1',
           title: '1. 기본 이사 조건',
+          updatedAt: 1,
           items: [
-            { text: '반포장 이사 (잔짐 박스 포장) + 잔류물품 폐기', dup: false },
-            { text: '출발지: 4층 빌라 (사다리차 필수)', dup: false },
-            { text: '도착지: 아파트 11층 (엘리베이터 예약·보양 확인)', dup: false },
-            { text: '적재물배상책임보험 가입 여부 확인', dup: false },
-            { text: '당일 추가금 없음 조건 견적서 명시', dup: false }
+            { uid: 'p1_1', text: '반포장 이사 (잔짐 박스 포장) + 잔류물품 폐기', dup: false, updatedAt: 1 },
+            { uid: 'p1_2', text: '출발지: 4층 빌라 (사다리차 필수)', dup: false, updatedAt: 1 },
+            { uid: 'p1_3', text: '도착지: 아파트 11층 (엘리베이터 예약·보양 확인)', dup: false, updatedAt: 1 },
+            { uid: 'p1_4', text: '적재물배상책임보험 가입 여부 확인', dup: false, updatedAt: 1 },
+            { uid: 'p1_5', text: '당일 추가금 없음 조건 견적서 명시', dup: false, updatedAt: 1 }
           ]
         },
         {
           id: 'p2',
           title: '2. 짐 정리 핵심 원칙 (21평 투룸)',
+          updatedAt: 1,
           items: [
-            { text: '실평수 15평에 맞춰 꼭 쓸 것만 챙기기', dup: false },
-            { text: '나머지는 출발지에서 미리 처분', dup: false },
-            { text: '큰 가구는 배치 공간 확정한 품목만 반입', dup: false },
-            { text: '반입 리스트 사전 작성·공유 (동선 파악용)', dup: false },
-            { text: '덕질용품은 미리 자차 이동', dup: false }
+            { uid: 'p2_1', text: '실평수 15평에 맞춰 꼭 쓸 것만 챙기기', dup: false, updatedAt: 1 },
+            { uid: 'p2_2', text: '나머지는 출발지에서 미리 처분', dup: false, updatedAt: 1 },
+            { uid: 'p2_3', text: '큰 가구는 배치 공간 확정한 품목만 반입', dup: false, updatedAt: 1 },
+            { uid: 'p2_4', text: '반입 리스트 사전 작성·공유 (동선 파악용)', dup: false, updatedAt: 1 },
+            { uid: 'p2_5', text: '덕질용품은 미리 자차 이동', dup: false, updatedAt: 1 }
           ]
         },
         {
           id: 'p3',
           title: '3. 출발지 잔류 및 폐기 품목',
+          updatedAt: 1,
           items: [
-            { text: '슈퍼싱글 침대 (프레임 + 매트리스)', dup: false },
-            { text: '소형 냉장고 1대', dup: false },
-            { text: '미포장 잔짐·생활폐기물 일괄 수거 확인', dup: false },
-            { text: '수거 불가 시 대형폐기물 스티커·별도 업체 이용', dup: false }
+            { uid: 'p3_1', text: '슈퍼싱글 침대 (프레임 + 매트리스)', dup: false, updatedAt: 1 },
+            { uid: 'p3_2', text: '소형 냉장고 1대', dup: false, updatedAt: 1 },
+            { uid: 'p3_3', text: '미포장 잔짐·생활폐기물 일괄 수거 확인', dup: false, updatedAt: 1 },
+            { uid: 'p3_4', text: '수거 불가 시 대형폐기물 스티커·별도 업체 이용', dup: false, updatedAt: 1 }
           ]
         }
       ],
@@ -659,85 +705,104 @@
         {
           id: 's1',
           name: '주방',
+          updatedAt: 1,
           kkomal: [
-            { text: '직수 정수기 1대 (철거·설치 확인)', dup: false },
-            { text: '밥솥', dup: false },
-            { text: '소형 에어프라이어', dup: false },
-            { text: '토스터기', dup: false },
-            { text: '전자레인지', dup: false },
-            { text: '유리잔 및 머그컵 다수', dup: true },
-            { text: '들통형 냄비', dup: true },
-            { text: '편수냄비', dup: true },
-            { text: '프라이팬', dup: true },
-            { text: '반찬그릇들', dup: false }
+            { uid: 's1_k1', text: '직수 정수기 1대 (철거·설치 확인)', dup: false, updatedAt: 1 },
+            { uid: 's1_k2', text: '밥솥', dup: false, updatedAt: 1 },
+            { uid: 's1_k3', text: '소형 에어프라이어', dup: false, updatedAt: 1 },
+            { uid: 's1_k4', text: '토스터기', dup: false, updatedAt: 1 },
+            { uid: 's1_k5', text: '전자레인지', dup: false, updatedAt: 1 },
+            { uid: 's1_k6', text: '유리잔 및 머그컵 다수', dup: true, updatedAt: 1 },
+            { uid: 's1_k7', text: '들통형 냄비', dup: true, updatedAt: 1 },
+            { uid: 's1_k8', text: '편수냄비', dup: true, updatedAt: 1 },
+            { uid: 's1_k9', text: '프라이팬', dup: true, updatedAt: 1 },
+            { uid: 's1_k10', text: '반찬그릇들', dup: false, updatedAt: 1 }
           ],
           kkamgo: [
-            { text: '유리잔/머그컵 중복 조율', dup: true },
-            { text: '냄비류·프라이팬 선별', dup: true },
-            { text: '수저 세트', dup: false },
-            { text: '밥그릇/국그릇 세트', dup: false },
-            { text: '칼/도마', dup: false }
+            { uid: 's1_g1', text: '유리잔/머그컵 중복 조율', dup: true, updatedAt: 1 },
+            { uid: 's1_g2', text: '냄비류·프라이팬 선별', dup: true, updatedAt: 1 },
+            { uid: 's1_g3', text: '수저 세트', dup: false, updatedAt: 1 },
+            { uid: 's1_g4', text: '밥그릇/국그릇 세트', dup: false, updatedAt: 1 },
+            { uid: 's1_g5', text: '칼/도마', dup: false, updatedAt: 1 }
           ],
           toBuy: [
-            { text: '중복 정리 후 부족한 조리도구', dup: false }
+            { uid: 's1_b1', text: '중복 정리 후 부족한 조리도구', dup: false, updatedAt: 1 }
           ]
         },
         {
           id: 's2',
           name: '공용 거실',
+          updatedAt: 1,
           kkomal: [
-            { text: '벽걸이 에어컨 (철거·이전설치 문의)', dup: false },
-            { text: '운동용 실내 바이크 1대', dup: false }
+            { uid: 's2_k1', text: '벽걸이 에어컨 (철거·이전설치 문의)', dup: false, updatedAt: 1 },
+            { uid: 's2_k2', text: '운동용 실내 바이크 1대', dup: false, updatedAt: 1 }
           ],
           kkamgo: [
-            { text: '거실 책장 수용 분량만큼의 책 선별', dup: false }
+            { uid: 's2_g1', text: '거실 책장 수용 분량만큼의 책 선별', dup: false, updatedAt: 1 }
           ],
           toBuy: [
-            { text: '거실 공용 책장', dup: false }
+            { uid: 's2_b1', text: '거실 공용 책장', dup: false, updatedAt: 1 }
           ]
         },
         {
           id: 's3',
           name: '개인 방',
+          updatedAt: 1,
           kkomal: [
-            { text: '싱글 간이침대 1개 (매트리스 포함)', dup: false },
-            { text: '설치형 행거 세트 (해체·재설치 상담)', dup: false },
-            { text: '책상 1개 + 의자 1개', dup: false },
-            { text: '3단 조립식 책장 1개', dup: false },
-            { text: '침대 협탁 1개', dup: false },
-            { text: '의류·생활용품 이사박스 소량', dup: false }
+            { uid: 's3_k1', text: '싱글 간이침대 1개 (매트리스 포함)', dup: false, updatedAt: 1 },
+            { uid: 's3_k2', text: '설치형 행거 세트 (해체·재설치 상담)', dup: false, updatedAt: 1 },
+            { uid: 's3_k3', text: '책상 1개 + 의자 1개', dup: false, updatedAt: 1 },
+            { uid: 's3_k4', text: '3단 조립식 책장 1개', dup: false, updatedAt: 1 },
+            { uid: 's3_k5', text: '침대 협탁 1개', dup: false, updatedAt: 1 },
+            { uid: 's3_k6', text: '의류·생활용품 이사박스 소량', dup: false, updatedAt: 1 }
           ],
           kkamgo: [
-            { text: '방 크기·붙박이장에 맞는 가구', dup: false },
-            { text: '선별한 의류 및 개인 물품', dup: false }
+            { uid: 's3_g1', text: '방 크기·붙박이장에 맞는 가구', dup: false, updatedAt: 1 },
+            { uid: 's3_g2', text: '선별한 의류 및 개인 물품', dup: false, updatedAt: 1 }
           ],
           toBuy: [
-            { text: '방 실측 후 수납용품', dup: false }
+            { uid: 's3_b1', text: '방 실측 후 수납용품', dup: false, updatedAt: 1 }
           ]
         },
         {
           id: 's4',
           name: '욕실 및 세탁실',
+          updatedAt: 1,
           kkomal: [
-            { text: '통돌이 세탁기 1대 (이전 설치 문의)', dup: false },
-            { text: '당장 쓸 최소한의 수건·세제', dup: false }
+            { uid: 's4_k1', text: '통돌이 세탁기 1대 (이전 설치 문의)', dup: false, updatedAt: 1 },
+            { uid: 's4_k2', text: '당장 쓸 최소한의 수건·세제', dup: false, updatedAt: 1 }
           ],
           kkamgo: [
-            { text: '당장 쓸 수건·욕실용품 최소한', dup: false },
-            { text: '기존 자잘한 소모품은 처분하고 오기', dup: false }
+            { uid: 's4_g1', text: '당장 쓸 수건·욕실용품 최소한', dup: false, updatedAt: 1 },
+            { uid: 's4_g2', text: '기존 자잘한 소모품은 처분하고 오기', dup: false, updatedAt: 1 }
           ],
           toBuy: [
-            { text: '욕실 슬리퍼 및 청소도구', dup: false }
+            { uid: 's4_b1', text: '욕실 슬리퍼 및 청소도구', dup: false, updatedAt: 1 }
           ]
         }
       ]
     };
 
-    function toItemObjects(arr) {
+    function toItemObjects(arr, prefixSeed = 'item') {
       if (!Array.isArray(arr)) return [];
-      return arr.map(item => {
-        if (typeof item === 'string') return { text: item, dup: false };
-        if (item && typeof item === 'object') return { text: String(item.text || ''), dup: Boolean(item.dup) };
+      return arr.map((item, idx) => {
+        if (typeof item === 'string') {
+          return {
+            uid: makeDeterministicId(prefixSeed + '_' + idx + '_' + item),
+            text: item,
+            dup: false,
+            updatedAt: 1
+          };
+        }
+        if (item && typeof item === 'object') {
+          const textVal = String(item.text || '');
+          return {
+            uid: item.uid || makeDeterministicId(prefixSeed + '_' + idx + '_' + textVal),
+            text: textVal,
+            dup: Boolean(item.dup),
+            updatedAt: Number(item.updatedAt || 1)
+          };
+        }
         return null;
       }).filter(x => x && x.text);
     }
@@ -746,53 +811,216 @@
       if (!data || !Array.isArray(data.principles) || !Array.isArray(data.spaces)) {
         return JSON.parse(JSON.stringify(defaultData));
       }
-      data.principles.forEach(p => {
+      data._rev = Number(data._rev || 0);
+      data.deletedIds = Array.isArray(data.deletedIds) ? data.deletedIds : [];
+
+      data.principles.forEach((p, idx) => {
+        p.id = p.id || ('p' + (idx + 1));
+        p.updatedAt = Number(p.updatedAt || 1);
         if (!Array.isArray(p.items)) {
           const lines = p.content ? p.content.split('\n').map(s => s.replace(/^[•\-]\s*/, '').trim()).filter(Boolean) : [];
-          p.items = toItemObjects(lines);
+          p.items = toItemObjects(lines, p.id);
           delete p.content;
         } else {
-          p.items = toItemObjects(p.items);
+          p.items = toItemObjects(p.items, p.id);
         }
       });
-      data.spaces.forEach(s => {
+
+      data.spaces.forEach((s, idx) => {
+        s.id = s.id || ('s' + (idx + 1));
+        s.updatedAt = Number(s.updatedAt || 1);
         ['kkomal', 'kkamgo', 'toBuy'].forEach(k => {
           if (!Array.isArray(s[k])) {
             const lines = typeof s[k] === 'string'
               ? s[k].split('\n').map(line => line.replace(/^[•\-]\s*/, '').trim()).filter(Boolean)
               : [];
-            s[k] = toItemObjects(lines);
+            s[k] = toItemObjects(lines, s.id + '_' + k);
           } else {
-            s[k] = toItemObjects(s[k]);
+            s[k] = toItemObjects(s[k], s.id + '_' + k);
           }
         });
       });
       return data;
     }
 
+    // 💡 핵심 기술: 내 화면 데이터와 상대방이 저장한 서버 데이터를 항목별로 똑똑하게 합치는 함수
+    function mergeItemArrays(localArr, remoteArr, deletedSet) {
+      const map = new Map();
+      const order = [];
+
+      // 1) 서버 데이터 먼저 배치
+      (remoteArr || []).forEach(item => {
+        if (!item || !item.uid || deletedSet.has(item.uid)) return;
+        map.set(item.uid, { ...item });
+        order.push(item.uid);
+      });
+
+      // 2) 내 로컬 데이터 병합 (새로 추가한 건 뒤에 붙이고, 수정한 건 최신 시간 기준으로 반영)
+      (localArr || []).forEach(item => {
+        if (!item || !item.uid || deletedSet.has(item.uid)) return;
+        if (!map.has(item.uid)) {
+          // 같은 글자의 캡슐이 이미 서버에 있다면 중복 생성 방지
+          const existingSameText = Array.from(map.values()).find(x => x.text === item.text);
+          if (existingSameText) {
+            if ((item.updatedAt || 0) > (existingSameText.updatedAt || 0)) {
+              existingSameText.dup = item.dup;
+              existingSameText.updatedAt = item.updatedAt;
+            }
+            return;
+          }
+          map.set(item.uid, { ...item });
+          order.push(item.uid);
+        } else {
+          const rem = map.get(item.uid);
+          if ((item.updatedAt || 0) >= (rem.updatedAt || 0)) {
+            map.set(item.uid, { ...item });
+          }
+        }
+      });
+
+      return order.map(uid => map.get(uid)).filter(Boolean);
+    }
+
+    function mergeAppData(local, remote) {
+      if (!remote || !Array.isArray(remote.spaces)) return normalizeData(local);
+      local = normalizeData(local);
+      remote = normalizeData(remote);
+
+      const deletedSet = new Set([...(remote.deletedIds || []), ...(local.deletedIds || [])]);
+
+      // 1) 원칙 탭 병합
+      const pMap = new Map();
+      const pOrder = [];
+      remote.principles.forEach(p => {
+        if (deletedSet.has(p.id)) return;
+        pMap.set(p.id, p);
+        pOrder.push(p.id);
+      });
+      local.principles.forEach(p => {
+        if (deletedSet.has(p.id)) return;
+        if (!pMap.has(p.id)) {
+          pMap.set(p.id, p);
+          pOrder.push(p.id);
+        } else {
+          const remP = pMap.get(p.id);
+          const newerTitle = (p.updatedAt || 0) >= (remP.updatedAt || 0) ? p.title : remP.title;
+          pMap.set(p.id, {
+            id: p.id,
+            title: newerTitle,
+            updatedAt: Math.max(p.updatedAt || 0, remP.updatedAt || 0),
+            items: mergeItemArrays(p.items, remP.items, deletedSet)
+          });
+        }
+      });
+
+      // 2) 공간별 탭 병합
+      const sMap = new Map();
+      const sOrder = [];
+      // 순서 변경이 더 최신인 쪽의 카드 순서를 따릅니다
+      const localOrderTime = local._orderUpdatedAt || 0;
+      const remoteOrderTime = remote._orderUpdatedAt || 0;
+      const primarySpaces = localOrderTime >= remoteOrderTime ? local.spaces : remote.spaces;
+      const secondarySpaces = localOrderTime >= remoteOrderTime ? remote.spaces : local.spaces;
+
+      primarySpaces.forEach(s => {
+        if (!deletedSet.has(s.id) && !sOrder.includes(s.id)) sOrder.push(s.id);
+      });
+      secondarySpaces.forEach(s => {
+        if (!deletedSet.has(s.id) && !sOrder.includes(s.id)) sOrder.push(s.id);
+      });
+
+      const localSpaceMap = new Map(local.spaces.map(s => [s.id, s]));
+      const remoteSpaceMap = new Map(remote.spaces.map(s => [s.id, s]));
+
+      const mergedSpaces = sOrder.map(id => {
+        const locS = localSpaceMap.get(id);
+        const remS = remoteSpaceMap.get(id);
+        if (locS && remS) {
+          const newerName = (locS.updatedAt || 0) >= (remS.updatedAt || 0) ? locS.name : remS.name;
+          return {
+            id,
+            name: newerName,
+            updatedAt: Math.max(locS.updatedAt || 0, remS.updatedAt || 0),
+            kkomal: mergeItemArrays(locS.kkomal, remS.kkomal, deletedSet),
+            kkamgo: mergeItemArrays(locS.kkamgo, remS.kkamgo, deletedSet),
+            toBuy: mergeItemArrays(locS.toBuy, remS.toBuy, deletedSet)
+          };
+        }
+        return locS || remS;
+      }).filter(Boolean);
+
+      return {
+        _rev: Math.max(local._rev || 0, remote._rev || 0),
+        _orderUpdatedAt: Math.max(localOrderTime, remoteOrderTime),
+        deletedIds: Array.from(deletedSet).slice(-300),
+        principles: pOrder.map(id => pMap.get(id)).filter(Boolean),
+        spaces: mergedSpaces
+      };
+    }
+
     let appData = loadLocalData();
 
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
-      fetchFromSheet();
+      fetchFromSheet(true);
+      startAutoPolling();
     });
 
+    // 다른 탭을 보다가 돌아왔을 때도 즉시 최신화
+    window.addEventListener('focus', () => {
+      if (!isUserTyping() && !isSyncing) {
+        fetchFromSheet(false);
+      }
+    });
+
+    function startAutoPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => {
+        // 내가 입력 중이거나 저장 대기 중일 때는 화면을 건드리지 않음
+        if (isUserTyping() || hasPendingLocalChanges || isSyncing) return;
+        fetchFromSheet(false);
+      }, POLL_INTERVAL_MS);
+    }
+
+    function isUserTyping() {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        return true;
+      }
+      // 추가/삭제 창이 열려 있을 때도 입력 중으로 간주
+      return Object.values(uiState).some(st => st.addOpen || st.delMode);
+    }
+
     function loadLocalData() {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MOVING_PLANNER_CAPSULE_V2');
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('MOVING_PLANNER_CAPSULE_V3') || localStorage.getItem('MOVING_PLANNER_CAPSULE_V2');
       if (raw) {
         try { return normalizeData(JSON.parse(raw)); } catch (e) { console.error(e); }
       }
       return JSON.parse(JSON.stringify(defaultData));
     }
 
+    function recordDeletion(id) {
+      if (!id) return;
+      if (!Array.isArray(appData.deletedIds)) appData.deletedIds = [];
+      if (!appData.deletedIds.includes(id)) {
+        appData.deletedIds.push(id);
+      }
+    }
+
     function saveData() {
+      hasPendingLocalChanges = true;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      setSyncStatus('syncing', '저장 중...');
+      setSyncStatus('syncing', '저장 대기...');
 
       if (syncTimer) clearTimeout(syncTimer);
       syncTimer = setTimeout(() => {
-        pushToSheet();
-      }, 800);
+        syncWithServer();
+      }, 650);
+    }
+
+    function manualSync() {
+      if (syncTimer) clearTimeout(syncTimer);
+      syncWithServer(true);
     }
 
     function setSyncStatus(state, text) {
@@ -806,44 +1034,83 @@
       return GAS_URL && GAS_URL.startsWith('https://script.google.com/') && !GAS_URL.includes('여기에_배포');
     }
 
-    async function fetchFromSheet() {
-      if (!isValidGasUrl()) {
-        setSyncStatus('ok', '로컬 저장됨');
-        return;
-      }
-      setSyncStatus('syncing', '불러오는 중...');
+    // 서버에서 최신 데이터를 가져와 내 화면과 병합
+    async function fetchFromSheet(showLoading = false) {
+      if (!isValidGasUrl() || isSyncing) return;
+      if (showLoading) setSyncStatus('syncing', '불러오는 중...');
+
       try {
-        const res = await fetch(GAS_URL);
+        const res = await fetch(GAS_URL + '?t=' + Date.now(), { cache: 'no-store' });
         const text = await res.text();
         if (text && text.trim().startsWith('{')) {
-          appData = normalizeData(JSON.parse(text));
+          const parsed = JSON.parse(text);
+          // 초기 빈 시트인 경우
+          if (parsed && parsed.data === null && parsed.rev === 0) {
+            await syncWithServer();
+            return;
+          }
+          const remoteData = normalizeData(parsed);
+          const beforeStr = JSON.stringify({ p: appData.principles, s: appData.spaces });
+
+          appData = mergeAppData(appData, remoteData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-          renderAll();
-          setSyncStatus('ok', '동기화 완료');
+
+          const afterStr = JSON.stringify({ p: appData.principles, s: appData.spaces });
+          if (beforeStr !== afterStr && !isUserTyping()) {
+            renderAll();
+          }
+          setSyncStatus('ok', '실시간 동기화됨');
         } else {
-          await pushToSheet();
+          await syncWithServer();
         }
       } catch (err) {
         console.error(err);
-        setSyncStatus('error', '로컬 모드');
+        if (showLoading) setSyncStatus('error', '오프라인 모드');
       }
     }
 
-    async function pushToSheet() {
+    // 💡 저장하기 직전에 서버 데이터를 먼저 불러와 합친 뒤(Merge) 저장하여 덮어쓰기 사고 방지!
+    async function syncWithServer(forceRender = false) {
       if (!isValidGasUrl()) {
         setSyncStatus('ok', '로컬 저장됨');
+        hasPendingLocalChanges = false;
         return;
       }
+      if (isSyncing) return;
+      isSyncing = true;
+      setSyncStatus('syncing', '동기화 중...');
+
       try {
+        // 1단계: 서버의 최신 상태 먼저 확인
+        const getRes = await fetch(GAS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+        const getText = await getRes.text();
+        if (getText && getText.trim().startsWith('{')) {
+          const remoteParsed = JSON.parse(getText);
+          if (!(remoteParsed && remoteParsed.data === null && remoteParsed.rev === 0)) {
+            appData = mergeAppData(appData, remoteParsed);
+          }
+        }
+
+        // 2단계: 병합된 최신 데이터를 서버에 저장
+        appData._rev = Date.now();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+
         await fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(appData)
         });
-        setSyncStatus('ok', '동기화 완료');
+
+        hasPendingLocalChanges = false;
+        if (!isUserTyping() || forceRender) {
+          renderAll();
+        }
+        setSyncStatus('ok', '실시간 동기화됨');
       } catch (err) {
         console.error(err);
         setSyncStatus('error', '로컬 저장됨');
+      } finally {
+        isSyncing = false;
       }
     }
 
@@ -1008,6 +1275,7 @@
 
       if (isDupMode && zoneKey.startsWith('s_')) {
         arr[itemIdx].dup = !arr[itemIdx].dup;
+        arr[itemIdx].updatedAt = Date.now();
         saveData();
         renderAll();
       }
@@ -1060,9 +1328,15 @@
 
       if (st.editIdx !== null && arr[st.editIdx]) {
         arr[st.editIdx].text = val;
+        arr[st.editIdx].updatedAt = Date.now();
         st.editIdx = null;
       } else {
-        arr.push({ text: val, dup: false });
+        arr.push({
+          uid: makeUid('cap'),
+          text: val,
+          dup: false,
+          updatedAt: Date.now()
+        });
       }
 
       saveData();
@@ -1080,7 +1354,12 @@
 
       const arr = getTargetArray(zoneKey);
       const sortedIndices = Array.from(st.selected).sort((a, b) => b - a);
-      sortedIndices.forEach(idx => arr.splice(idx, 1));
+      sortedIndices.forEach(idx => {
+        if (arr[idx] && arr[idx].uid) {
+          recordDeletion(arr[idx].uid);
+        }
+        arr.splice(idx, 1);
+      });
 
       st.selected.clear();
       st.delMode = false;
@@ -1164,11 +1443,13 @@
 
     function updatePrincipleTitle(idx, val) {
       appData.principles[idx].title = val;
+      appData.principles[idx].updatedAt = Date.now();
       saveData();
     }
 
     function updateSpaceName(idx, val) {
       appData.spaces[idx].name = val;
+      appData.spaces[idx].updatedAt = Date.now();
       const buyTitle = document.querySelector(`.buy-space-title[data-idx="${idx}"]`);
       if (buyTitle) buyTitle.textContent = val;
       saveData();
@@ -1177,12 +1458,14 @@
     function addSpace() {
       resetAllModes();
       appData.spaces.push({
-        id: 's_' + Date.now(),
+        id: makeUid('space'),
         name: '새로운 공간',
+        updatedAt: Date.now(),
         kkomal: [],
         kkamgo: [],
         toBuy: []
       });
+      appData._orderUpdatedAt = Date.now();
       renderAll();
       saveData();
     }
@@ -1219,18 +1502,21 @@
       const temp = appData.spaces[idx];
       appData.spaces[idx] = appData.spaces[targetIdx];
       appData.spaces[targetIdx] = temp;
+      appData._orderUpdatedAt = Date.now();
       renderCompareAndBuy();
       saveData();
     }
 
     function deleteSpace(idx) {
-      const spaceName = appData.spaces[idx].name;
+      const space = appData.spaces[idx];
       openConfirmModal(
         '공간 삭제',
-        `'${spaceName}' 공간을 삭제할까요? 탭의 카드도 함께 삭제됩니다.`,
+        `'${space.name}' 공간을 삭제할까요? 탭의 카드도 함께 삭제됩니다.`,
         '삭제',
         () => {
+          recordDeletion(space.id);
           appData.spaces.splice(idx, 1);
+          appData._orderUpdatedAt = Date.now();
           renderCompareAndBuy();
           saveData();
         }
