@@ -622,9 +622,9 @@
       <div class="toolbar">
         <div class="toolbar-title">공간별 짐 비교</div>
         <div class="btn-group">
-          <button class="btn" onclick="addSpace()">+ 공간 추가</button>
+          <button class="btn" onclick="addSpace()">+</button>
           <button class="btn" id="dupBtn" onclick="toggleDupMode()">중복 표시</button>
-          <button class="btn" id="manageBtn" onclick="toggleManageMode()">관리</button>
+          <button class="btn" id="manageBtn" onclick="toggleManageMode()">⚙️</button>
         </div>
       </div>
       <div class="mode-banner">
@@ -1004,7 +1004,7 @@
         if (!isUserTyping() || forceRender) {
           renderAll();
         }
-        setSyncStatus('ok', '실시간 동기화됨');
+        setSyncStatus('ok', '동기화됨');
       } catch (err) {
         console.error(err);
         setSyncStatus('error', '로컬 저장됨');
@@ -1039,7 +1039,7 @@
       const manageBtn = document.getElementById('manageBtn');
       if (manageBtn) {
         manageBtn.classList.remove('manage-active');
-        manageBtn.textContent = '관리';
+        manageBtn.textContent = '⚙️';
       }
 
       Object.keys(uiState).forEach(k => {
