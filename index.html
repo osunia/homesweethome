@@ -308,7 +308,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 0;
       transition: grid-template-columns 0.25s ease;
-}
+    }
     .compare-box:has(> .zone-box:first-child.add-mode),
     .compare-box:has(> .zone-box:first-child.del-mode) {
       grid-template-columns: 2.2fr 1fr;
@@ -587,6 +587,41 @@
       gap: 8px;
       margin-top: 4px;
     }
+
+    .sync-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 50, 38, 0.55);
+      backdrop-filter: blur(2px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 20px;
+      z-index: 1000;
+    }
+    .sync-overlay.open {
+      display: flex;
+    }
+    .sync-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3.5px solid rgba(233, 222, 200, 0.28);
+      border-top-color: var(--oat-beige);
+      border-radius: 50%;
+      animation: syncSpin 0.8s linear infinite;
+    }
+    @keyframes syncSpin {
+      to { transform: rotate(360deg); }
+    }
+    .sync-overlay-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--oat-beige);
+      letter-spacing: -0.2px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    }
   </style>
 </head>
 <body>
@@ -652,6 +687,11 @@
     </div>
   </div>
 
+<div class="sync-overlay open" id="syncOverlay" aria-live="polite" aria-busy="true">
+    <div class="sync-spinner"></div>
+    <div class="sync-overlay-text">동기화 중...</div>
+  </div>
+
   <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxKj05_crWX1-XVSK1HZIuwyKrZEeAXJiNSOQbDf6ufTS4olgImHcDt0u95VNV6zU0x/exec";
 
@@ -661,11 +701,22 @@
     let syncTimer = null;
     let pollTimer = null;
     let isSyncing = false;
+    let isFetching = false;
     let hasPendingLocalChanges = false;
     let isManageMode = false;
     let isDupMode = false;
     let modalConfirmCallback = null;
     const uiState = {};
+
+    function showSyncOverlay() {
+      const el = document.getElementById('syncOverlay');
+      if (el) el.classList.add('open');
+    }
+
+    function hideSyncOverlay() {
+      const el = document.getElementById('syncOverlay');
+      if (el) el.classList.remove('open');
+    }
 
     function makeUid(prefix = 'id') {
       return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
@@ -862,12 +913,24 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
-      fetchFromSheet(true);
+      fetchFromSheet(true, true);
       startAutoPolling();
     });
 
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted && !isUserTyping() && !hasPendingLocalChanges) {
+        fetchFromSheet(true, true);
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !isUserTyping() && !hasPendingLocalChanges && !isSyncing && !isFetching) {
+        fetchFromSheet(true, true);
+      }
+    });
+
     window.addEventListener('focus', () => {
-      if (!isUserTyping() && !isSyncing) {
+      if (!isUserTyping() && !isSyncing && !isFetching) {
         fetchFromSheet(false);
       }
     });
@@ -875,7 +938,7 @@
     function startAutoPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(() => {
-        if (isUserTyping() || hasPendingLocalChanges || isSyncing) return;
+        if (isUserTyping() || hasPendingLocalChanges || isSyncing || isFetching) return;
         fetchFromSheet(false);
       }, POLL_INTERVAL_MS);
     }
@@ -931,8 +994,13 @@
       return GAS_URL && GAS_URL.startsWith('https://script.google.com/') && !GAS_URL.includes('여기에_배포');
     }
     
-    async function fetchFromSheet(showLoading = false) {
-      if (!isValidGasUrl() || isSyncing) return;
+    async function fetchFromSheet(showLoading = false, useOverlay = false) {
+      if (!isValidGasUrl() || isSyncing || isFetching) {
+        if (useOverlay) hideSyncOverlay();
+        return;
+      }
+      isFetching = true;
+      if (useOverlay) showSyncOverlay();
       if (showLoading) setSyncStatus('syncing', '불러오는 중...');
 
       try {
@@ -968,6 +1036,9 @@
       } catch (err) {
         console.error(err);
         if (showLoading) setSyncStatus('error', '오프라인 모드');
+      } finally {
+        isFetching = false;
+        if (useOverlay) hideSyncOverlay();
       }
     }
 
@@ -1356,7 +1427,7 @@
 
     function addSpace() {
       resetAllModes();
-      appData.spaces.push({
+      appData.spaces.unshift({
         id: makeUid('space'),
         name: '새로운 공간',
         updatedAt: Date.now(),
