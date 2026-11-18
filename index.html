@@ -635,7 +635,7 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxKj05_crWX1-XVSK1HZIuwyKrZEeAXJiNSOQbDf6ufTS4olgImHcDt0u95VNV6zU0x/exec";
 
     const STORAGE_KEY = 'MOVING_PLANNER_CAPSULE_V4';
-    const POLL_INTERVAL_MS = 5000; // 5초마다 상대방 변경사항 자동 확인
+    const POLL_INTERVAL_MS = 5000; 
 
     let syncTimer = null;
     let pollTimer = null;
@@ -646,12 +646,10 @@
     let modalConfirmCallback = null;
     const uiState = {};
 
-    // 고유 ID 생성기 (각 캡슐마다 주민등록번호 같은 고유 이름표를 붙여줍니다)
     function makeUid(prefix = 'id') {
       return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
     }
 
-    // 텍스트 기반 고정 해시 ID (초기 기본 데이터가 양쪽 컴퓨터에서 동일한 ID를 갖도록 보장)
     function makeDeterministicId(seedStr) {
       let hash = 0;
       for (let i = 0; i < seedStr.length; i++) {
@@ -732,23 +730,20 @@
       return data;
     }
 
-    // 💡 핵심 기술: 내 화면 데이터와 상대방이 저장한 서버 데이터를 항목별로 똑똑하게 합치는 함수
     function mergeItemArrays(localArr, remoteArr, deletedSet) {
       const map = new Map();
       const order = [];
 
-      // 1) 서버 데이터 먼저 배치
       (remoteArr || []).forEach(item => {
         if (!item || !item.uid || deletedSet.has(item.uid)) return;
         map.set(item.uid, { ...item });
         order.push(item.uid);
       });
 
-      // 2) 내 로컬 데이터 병합 (새로 추가한 건 뒤에 붙이고, 수정한 건 최신 시간 기준으로 반영)
       (localArr || []).forEach(item => {
         if (!item || !item.uid || deletedSet.has(item.uid)) return;
         if (!map.has(item.uid)) {
-          // 같은 글자의 캡슐이 이미 서버에 있다면 중복 생성 방지
+
           const existingSameText = Array.from(map.values()).find(x => x.text === item.text);
           if (existingSameText) {
             if ((item.updatedAt || 0) > (existingSameText.updatedAt || 0)) {
@@ -777,7 +772,6 @@
 
       const deletedSet = new Set([...(remote.deletedIds || []), ...(local.deletedIds || [])]);
 
-      // 1) 원칙 탭 병합
       const pMap = new Map();
       const pOrder = [];
       remote.principles.forEach(p => {
@@ -802,10 +796,9 @@
         }
       });
 
-      // 2) 공간별 탭 병합
       const sMap = new Map();
       const sOrder = [];
-      // 순서 변경이 더 최신인 쪽의 카드 순서를 따릅니다
+
       const localOrderTime = local._orderUpdatedAt || 0;
       const remoteOrderTime = remote._orderUpdatedAt || 0;
       const primarySpaces = localOrderTime >= remoteOrderTime ? local.spaces : remote.spaces;
@@ -855,7 +848,6 @@
       startAutoPolling();
     });
 
-    // 다른 탭을 보다가 돌아왔을 때도 즉시 최신화
     window.addEventListener('focus', () => {
       if (!isUserTyping() && !isSyncing) {
         fetchFromSheet(false);
@@ -865,7 +857,7 @@
     function startAutoPolling() {
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(() => {
-        // 내가 입력 중이거나 저장 대기 중일 때는 화면을 건드리지 않음
+
         if (isUserTyping() || hasPendingLocalChanges || isSyncing) return;
         fetchFromSheet(false);
       }, POLL_INTERVAL_MS);
@@ -876,7 +868,7 @@
       if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
         return true;
       }
-      // 추가/삭제 창이 열려 있을 때도 입력 중으로 간주
+
       return Object.values(uiState).some(st => st.addOpen || st.delMode);
     }
 
@@ -922,8 +914,7 @@
     function isValidGasUrl() {
       return GAS_URL && GAS_URL.startsWith('https://script.google.com/') && !GAS_URL.includes('여기에_배포');
     }
-
-    // 서버에서 최신 데이터를 가져와 내 화면과 병합
+    
     async function fetchFromSheet(showLoading = false) {
       if (!isValidGasUrl() || isSyncing) return;
       if (showLoading) setSyncStatus('syncing', '불러오는 중...');
@@ -933,15 +924,21 @@
         const text = await res.text();
         if (text && text.trim().startsWith('{')) {
           const parsed = JSON.parse(text);
-          // 초기 빈 시트인 경우
+
           if (parsed && parsed.data === null && parsed.rev === 0) {
             await syncWithServer();
             return;
           }
+
           const remoteData = normalizeData(parsed);
           const beforeStr = JSON.stringify({ p: appData.principles, s: appData.spaces });
 
-          appData = mergeAppData(appData, remoteData);
+          if (!appData._rev || appData._rev === 0) {
+            appData = remoteData;
+          } else {
+            appData = mergeAppData(appData, remoteData);
+          }
+
           localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
 
           const afterStr = JSON.stringify({ p: appData.principles, s: appData.spaces });
@@ -970,7 +967,6 @@
       setSyncStatus('syncing', '동기화 중...');
 
       try {
-        // 1단계: 서버의 최신 상태 먼저 확인
         const getRes = await fetch(GAS_URL + '?t=' + Date.now(), { cache: 'no-store' });
         const getText = await getRes.text();
         if (getText && getText.trim().startsWith('{')) {
@@ -980,7 +976,6 @@
           }
         }
 
-        // 2단계: 병합된 최신 데이터를 서버에 저장
         appData._rev = Date.now();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
 
